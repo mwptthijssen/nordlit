@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NordLit – Nordic Literature Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.6/css/flag-icons.min.css">
+<style>
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+
+:root {
+  /* Scandinavian Fjord Palette — colorblind-safe */
+  /* Primary: slate-fjord blue  Accent: straw gold  Neutral: birch greys */
+  --fjord:      #2b5f8a;   /* deep slate-blue — main interactive colour */
+  --fjord-mid:  #3a7ab5;   /* mid fjord */
+  --fjord-lt:   #5a9fd4;   /* light fjord */
+  --fjord-mist: #dceef9;   /* near-white tint */
+  --straw:      #b07d2a;   /* warm straw gold — accent, colorblind-safe with blue */
+  --straw-lt:   #cfa04f;
+  --birch:      #f7f5f0;   /* warm birch white — page bg */
+  --birch2:     #ece9e2;   /* slightly deeper */
+  --birch3:     #dedad1;   /* panel borders */
+  --white:      #fcfbf8;   /* card bg */
+  --slate1:     #3d4f5e;   /* dark body text — slate not black */
+  --slate2:     #6b7e8d;   /* secondary text */
+  --slate3:     #a8b8c4;   /* muted/placeholder */
+  --slate4:     #d5dfe6;   /* dividers */
+  --slate5:     #eaf0f4;   /* subtle bg */
+  --r:          4px;
+  --sh:         0 1px 4px rgba(43,95,138,.07);
+  --shm:        0 4px 18px rgba(43,95,138,.13);
+  --shl:        0 8px 32px rgba(43,95,138,.16);
+
+  /* Boolean syntax — colorblind-safe distinct hues */
+  /* Uses blue family + orange + violet — safe for deuteranopia & protanopia */
+  --bool-and:   #1f6aa5;   /* clear blue */
+  --bool-or:    #c47a00;   /* orange-amber — distinct from blue in all CVD */
+  --bool-not:   #6a3d9a;   /* violet — not red, distinct from blue/orange */
+  --bool-paren: #00796b;   /* teal — distant from all above */
+  --bool-quote: #5d4037;   /* warm brown */
+}
+
+body {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 14px;
+  background: var(--birch);
+  color: var(--slate1);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-image:
+    radial-gradient(ellipse at 15% 0%, rgba(43,95,138,.05) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(176,125,42,.04) 0%, transparent 50%);
+}
+
+/* ── Header ── */
+header {
+  background: #1a2535;
+  color: #fff;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 76px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.30);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-top: 4px solid var(--straw);
+}
+
+.logo {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 32px;
+  font-weight: 900;
+  color: #f5f1ea;
+  text-decoration: none;
+  letter-spacing: -.5px;
+  line-height: 1;
+}
+.logo em {
+  color: var(--straw-lt);
+  font-style: italic;
+}
+.logo-tagline {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,.45);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.logo-wrap { display: flex; flex-direction: column; gap: 1px; }
+
+/* ── Layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  flex: 1;
+  min-height: calc(100vh - 76px);
+}
+
+/* ── Sidebar ── */
+aside {
+  background: var(--white);
+  border-right: 1px solid var(--birch3);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .875rem;
+  position: sticky;
+  top: 76px;
+  height: calc(100vh - 76px);
+  overflow-y: auto;
+}
+aside::-webkit-scrollbar { width: 4px; }
+aside::-webkit-scrollbar-track { background: transparent; }
+aside::-webkit-scrollbar-thumb { background: var(--slate3); border-radius: 2px; }
+
+.panel {
+  background: var(--white);
+  border: 1px solid var(--birch3);
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  overflow: hidden;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--birch);
+  border-bottom: 1px solid var(--birch3);
+  cursor: pointer;
+  user-select: none;
+  transition: background 120ms;
+}
+.panel-head:hover { background: var(--birch2); }
+.panel-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--fjord);
+}
+.panel-arrow { font-size: 10px; color: var(--slate2); transition: transform 180ms; }
+.panel.open .panel-arrow { transform: rotate(180deg); }
+.panel-body { display: none; padding: 10px 12px; max-height: 580px; overflow-y: auto; }
+.panel-body::-webkit-scrollbar { width: 3px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--slate3); }
+#dbList { min-width: 300px; }
+.panel.open .panel-body { display: block; }
+
+/* DB groups */
+.db-group { margin-bottom: 6px; }
+.db-group-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  border-bottom: 1px solid var(--slate4);
+  margin-bottom: 3px;
+}
+.db-group-toggle {
+  font-size: 10px;
+  color: var(--slate2);
+  cursor: pointer;
+  user-select: none;
+  width: 12px;
+  flex-shrink: 0;
+  transition: transform 180ms;
+}
+.db-group.open .db-group-toggle { transform: rotate(90deg); }
+.db-group-name {
+  font-family: 'Lora', serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate1);
+  flex: 1;
+  cursor: pointer;
+  transition: color 120ms;
+}
+.db-group-name:hover { color: var(--fjord); }
+.db-group-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--slate2);
+}
+.db-pubtypes {
+  display: none;
+  padding-left: 16px;
+  border-left: 2px solid var(--fjord-mist);
+  margin-left: 8px;
+}
+.db-group.open .db-pubtypes { display: block; }
+.pt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  cursor: pointer;
+  transition: color 100ms;
+}
+.pt-row:hover .pt-name { color: var(--slate1); }
+.pt-name { font-size: 12px; color: var(--slate1); flex: 1; }
+.pt-count { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--slate3); }
+
+/* Year */
+.year-range-row { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
+.year-range-row input {
+  width: 74px;
+  padding: 5px 8px;
+  border: 1px solid var(--slate3);
+  border-radius: var(--r);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--slate1);
+  background: var(--birch);
+  transition: border-color 150ms;
+}
+.year-range-row input:focus { outline: none; border-color: var(--fjord); background: var(--white); }
+.year-sep { font-size: 14px; color: var(--slate2); }
+.year-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 2px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--slate1);
+  transition: color 100ms;
+}
+.year-row:hover { color: var(--slate1); }
+.year-count { margin-left: auto; font-size: 11px; color: var(--slate3); }
+
+input[type=checkbox] {
+  accent-color: var(--fjord);
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.clear-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--slate2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 4px 2px;
+  text-align: left;
+  transition: color 150ms;
+}
+.clear-btn:hover { color: var(--straw); }
+
+/* ── Main ── */
+main {
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+/* ── Boolean search — contenteditable approach ── */
+.search-block { display: flex; flex-direction: column; gap: 8px; }
+.search-row { display: flex; gap: 8px; align-items: flex-start; }
+
+/* The highlighted search input wrapper */
+.search-editor-wrap {
+  flex: 1;
+  position: relative;
+  border: 2px solid var(--slate3);
+  border-radius: var(--r);
+  background: var(--white);
+  transition: border-color 180ms, box-shadow 180ms;
+  min-height: 42px;
+}
+.search-editor-wrap:focus-within {
+  border-color: var(--fjord);
+  box-shadow: 0 0 0 3px rgba(43,95,138,.12);
+}
+
+/* The actual editable layer — invisible text, caret shows here */
+.search-input-real {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  font-family: 'DM Mono', monospace;
+  font-size: 13.5px;
+  color: transparent;
+  caret-color: var(--slate1);
+  resize: none;
+  outline: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  z-index: 2;
+}
+
+/* The syntax-highlighted mirror layer */
+.search-highlight-layer {
+  padding: 9px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13.5px;
+  color: var(--slate1);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  pointer-events: none;
+  user-select: none;
+  min-height: 42px;
+  position: relative;
+  z-index: 1;
+}
+.search-highlight-layer:empty::before {
+  content: attr(data-placeholder);
+  color: var(--slate3);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Boolean token colors */
+.tok-and   { color: var(--bool-and);   font-weight: 500; }
+.tok-or    { color: var(--bool-or);    font-weight: 500; }
+.tok-not   { color: var(--bool-not);   font-weight: 500; }
+.tok-paren { color: var(--bool-paren); font-weight: 700; }
+.tok-quote { color: var(--bool-quote); }
+
+/* Simple (additional rows) still use textarea with highlight */
+.bool-select {
+  padding: 9px 8px;
+  border: 1px solid var(--slate3);
+  border-radius: var(--r);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--slate1);
+  background: var(--birch);
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 68px;
+  height: 42px;
+  transition: border-color 150ms;
+}
+.bool-select:focus { outline: none; border-color: var(--fjord); }
+
+.remove-row {
+  background: none;
+  border: 1px solid var(--slate3);
+  border-radius: var(--r);
+  color: var(--slate2);
+  cursor: pointer;
+  font-size: 13px;
+  width: 30px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color 120ms, border-color 120ms;
+}
+.remove-row:hover { color: var(--bool-not); border-color: var(--bool-not); }
+
+.search-controls { display: flex; gap: 8px; align-items: center; }
+.add-btn {
+  padding: 7px 14px;
+  border: 1px dashed var(--slate3);
+  border-radius: var(--r);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: var(--slate2);
+  background: none;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.add-btn:hover { border-color: var(--fjord); color: var(--fjord); background: var(--fjord-mist); }
+
+/* Buttons */
+.btn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: var(--r);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 150ms;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--fjord);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--fjord-mid); transform: translateY(-1px); box-shadow: var(--shm); }
+.btn-secondary {
+  background: var(--birch2);
+  color: var(--slate1);
+  border: 1px solid var(--birch3);
+}
+.btn-secondary:hover { background: var(--birch3); }
+.btn-gold {
+  background: var(--straw);
+  color: #fff;
+}
+.btn-gold:hover { background: var(--straw-lt); transform: translateY(-1px); box-shadow: var(--shm); }
+.btn-ghost {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.3);
+}
+.btn-ghost:hover { background: rgba(255,255,255,.22); }
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.result-meta {
+  font-family: 'Lora', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--slate1);
+}
+.result-meta strong { font-style: normal; color: var(--slate1); font-weight: 500; }
+.toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.size-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--slate2);
+}
+.size-wrap select {
+  padding: 5px 7px;
+  border: 1px solid var(--slate3);
+  border-radius: var(--r);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  background: var(--birch);
+  color: var(--slate1);
+  cursor: pointer;
+}
+
+/* Dropdowns */
+.dd-wrap { position: relative; }
+.dd-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  background: var(--white);
+  border: 1px solid var(--birch3);
+  border-radius: var(--r);
+  box-shadow: var(--shl);
+  z-index: 60;
+  min-width: 185px;
+  overflow: hidden;
+}
+.dd-wrap.open .dd-menu { display: block; animation: fadeDown .12s ease; }
+@keyframes fadeDown { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+.dd-item {
+  display: block;
+  width: 100%;
+  padding: 9px 15px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .03em;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--slate1);
+  transition: background 100ms;
+}
+.dd-item:hover { background: var(--birch); color: var(--fjord); }
+.dd-sep { height: 1px; background: var(--birch2); margin: 3px 0; }
+
+/* Selection bar */
+.sel-bar {
+  background: var(--fjord);
+  color: #fff;
+  padding: 9px 16px;
+  border-radius: var(--r);
+  display: none;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .04em;
+}
+.sel-bar.on { display: flex; animation: fadeDown .15s ease; }
+.sel-dd-wrap { position: relative; }
+.sel-dd-menu {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 5px);
+  background: var(--white);
+  border: 1px solid var(--birch3);
+  border-radius: var(--r);
+  box-shadow: var(--shl);
+  z-index: 60;
+  min-width: 175px;
+  overflow: hidden;
+}
+.sel-dd-wrap.open .sel-dd-menu { display: block; animation: fadeDown .12s ease; }
+
+/* Result cards */
+.results { display: flex; flex-direction: column; gap: 10px; }
+.card {
+  background: var(--white);
+  border: 1px solid var(--birch3);
+  border-radius: var(--r);
+  padding: 15px 18px;
+  box-shadow: var(--sh);
+  transition: box-shadow 180ms, border-color 180ms, transform 180ms;
+}
+.card:hover {
+  box-shadow: var(--shm);
+  border-color: var(--slate3);
+  transform: translateY(-1px);
+}
+.card.selected {
+  border-color: var(--fjord);
+  background: var(--fjord-mist);
+  border-left: 3px solid var(--fjord);
+}
+.card-top { display: flex; gap: 10px; align-items: flex-start; }
+.card-cb { margin-top: 4px; flex-shrink: 0; }
+.card-body { flex: 1; min-width: 0; }
+.card-title {
+  font-family: 'Lora', serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin-bottom: 6px;
+  color: var(--slate1);
+}
+.card-title a { color: var(--slate1); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 150ms, color 150ms; }
+.card-title a:hover { color: var(--fjord-mid); border-bottom-color: var(--fjord-mid); }
+.card-chips { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 7px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 2px;
+  padding: 2px 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  border: 1px solid;
+  letter-spacing: .02em;
+}
+.chip-year   { background: #dceef9; border-color: #a8cce8; color: #1f5c8a; }
+.chip-src    { background: var(--birch); border-color: var(--birch3); color: var(--slate1); }
+.chip-type   { background: #fef3e2; border-color: #f0d9b0; color: #7a5c1a; }
+.card-authors {
+  font-family: 'Lora', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--slate2);
+  margin-bottom: 7px;
+}
+.card-abstract {
+  font-family: 'Lora', serif;
+  font-size: 13px;
+  color: var(--slate1);
+  line-height: 1.65;
+  border-top: 1px solid var(--slate4);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+mark {
+  background: rgba(176,125,42,.18);
+  color: var(--straw);
+  padding: 0 2px;
+  border-radius: 2px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* Pagination */
+.pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 0 6px;
+  flex-wrap: wrap;
+}
+.pager-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--birch3);
+  border-radius: var(--r);
+  background: var(--white);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--slate1);
+  transition: all 120ms;
+}
+.pager-btn:hover:not(:disabled) { background: var(--birch); border-color: var(--slate3); color: var(--fjord); }
+.pager-btn.active { background: var(--fjord); color: #fff; border-color: var(--fjord); }
+.pager-btn:disabled { opacity: .35; cursor: default; }
+.pager-dots { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--slate2); padding: 0 4px; }
+
+/* States */
+.empty {
+  text-align: center;
+  padding: 70px 20px;
+  color: var(--slate2);
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 15px;
+}
+.empty .ico { font-size: 36px; margin-bottom: 14px; opacity: .6; }
+.spinner-wrap { text-align: center; padding: 70px 20px; }
+.spinner {
+  display: inline-block;
+  width: 32px; height: 32px;
+  border: 2px solid var(--slate3);
+  border-top-color: var(--fjord);
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 22px; right: 22px;
+  background: var(--fjord);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--r);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .05em;
+  box-shadow: var(--shl);
+  z-index: 300;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+  border-left: 3px solid var(--straw);
+}
+.toast.on { opacity: 1; transform: none; }
+
+/* Boolean legend */
+.bool-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--slate2);
+  padding: 2px 0;
+}
+.bool-legend span { display: flex; align-items: center; gap: 4px; }
+.leg-and { color: var(--bool-and); }
+.leg-or  { color: var(--bool-or); }
+.leg-not { color: var(--bool-not); }
+.leg-par { color: var(--bool-paren); }
+.leg-q   { color: var(--bool-quote); }
+
+.fi { display: inline-block; vertical-align: middle; margin-right: 3px; border-radius: 2px; width: 1.2em; height: 0.9em; background-size: cover; background-position: center; flex-shrink: 0; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  aside { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--birch3); }
+  main { padding: 1rem 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <a class="logo" href="/">Nord<em>Lit</em></a>
+    <div class="logo-tagline">Nordic Literature Search</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <a href="/manual" target="_blank" rel="noopener"
+       class="btn btn-secondary"
+       style="font-size:11px;text-decoration:none">Manual</a>
+    <div class="dd-wrap" id="ioWrap">
+      <button class="btn btn-secondary" onclick="toggleDD('ioWrap')" style="font-size:11px">Search</button>
+      <div class="dd-menu">
+        <button class="dd-item" onclick="saveSearch()">💾 Save search (JSON)</button>
+        <div class="dd-sep"></div>
+        <label class="dd-item" style="cursor:pointer">
+          📂 Load search (JSON)
+          <input type="file" id="loadFile" accept=".json" style="display:none" onchange="loadSearch(event)">
+        </label>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside>
+    <div class="panel open" id="dbPanel">
+      <div class="panel-head" onclick="togglePanel('dbPanel')">
+        <span class="panel-title">Database &amp; Publication Type</span>
+        <span class="panel-arrow">▾</span>
+      </div>
+      <div class="panel-body">
+        <div id="dbList">
+          <div class="spinner-wrap"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel open" id="yearPanel">
+      <div class="panel-head" onclick="togglePanel('yearPanel')">
+        <span class="panel-title">Year</span>
+        <span class="panel-arrow">▾</span>
+      </div>
+      <div class="panel-body">
+        <div class="year-range-row">
+          <input type="number" id="yearFrom" placeholder="From" min="1000" max="2100" oninput="scheduleSearch()">
+          <span class="year-sep">–</span>
+          <input type="number" id="yearTo" placeholder="To" min="1000" max="2100" oninput="scheduleSearch()">
+        </div>
+        <div id="yearList"></div>
+      </div>
+    </div>
+
+    <button class="clear-btn" onclick="clearAll()">✕ Clear all filters</button>
+  </aside>
+
+  <!-- Main -->
+  <main>
+
+    <!-- Boolean search rows -->
+    <div id="searchBlock" class="search-block">
+      <div class="search-row" id="row_0">
+        <div class="search-editor-wrap" id="wrap_0">
+          <!-- The invisible real textarea syncs text, caret visible via caret-color -->
+          <textarea class="search-input-real" id="q_0" rows="1"
+            oninput="syncHighlight(0);autoResize(this)"
+            onkeydown="handleSearchKey(event, 0)"
+            spellcheck="false"></textarea>
+          <!-- Syntax-highlighted mirror -->
+          <div class="search-highlight-layer" id="hl_0"
+            data-placeholder="Search title and abstract…"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boolean legend -->
+    <div class="bool-legend">
+      <span><b class="leg-and">AND</b> intersection</span>
+      <span><b class="leg-or">OR</b> union</span>
+      <span><b class="leg-not">NOT</b> exclusion</span>
+      <span><b class="leg-par">( )</b> grouping</span>
+      <span><b class="leg-q">" "</b> phrase</span>
+    </div>
+
+    <div class="search-controls">
+      <button class="add-btn" onclick="addRow()">+ Add row</button>
+      <button class="btn btn-primary" onclick="doSearch(1)">Search</button>
+      <button class="btn btn-secondary" onclick="resetSearch()">Clear</button>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="result-meta" id="resMeta"></div>
+      <div class="toolbar-right">
+        <div class="size-wrap">
+          Show
+          <select id="pageSize" onchange="doSearch(1)">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="250">250</option>
+          </select>
+          per page
+        </div>
+        <div class="dd-wrap" id="expWrap">
+          <button class="btn btn-gold" onclick="toggleDD('expWrap')">Export all ▾</button>
+          <div class="dd-menu">
+            <button class="dd-item" onclick="doExport('csv',false)">📄 CSV</button>
+            <button class="dd-item" onclick="doExport('xlsx',false)">📊 Excel</button>
+            <button class="dd-item" onclick="doExport('ris',false)">📚 RIS</button>
+            <button class="dd-item" onclick="doExport('bibtex',false)">🔖 BibTeX</button>
+            <button class="dd-item" onclick="doExport('jsonl',false)">📦 JSONL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selection bar -->
+    <div class="sel-bar" id="selBar">
+      <span id="selCount">0 selected</span>
+      <div class="sel-dd-wrap" id="selExpWrap">
+        <button class="btn btn-ghost" onclick="toggleSelDD()">Export selected ▾</button>
+        <div class="sel-dd-menu" id="selExpMenu">
+          <button class="dd-item" onclick="doExport('csv',true)">📄 CSV</button>
+          <button class="dd-item" onclick="doExport('xlsx',true)">📊 Excel</button>
+          <button class="dd-item" onclick="doExport('ris',true)">📚 RIS</button>
+          <button class="dd-item" onclick="doExport('bibtex',true)">🔖 BibTeX</button>
+          <button class="dd-item" onclick="doExport('jsonl',true)">📦 JSONL</button>
+        </div>
+      </div>
+      <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px" onclick="clearSel()">✕ Clear</button>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsArea">
+      <div class="empty"><div class="ico">📖</div>Search across millions of Nordic publications.</div>
+    </div>
+    <div class="pager" id="pager"></div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Country flag mapping (uses flag-icons CSS library) ───────────────────────
+var COUNTRY_FLAGS = {
+  'Norway':  'no',
+  'Sweden':  'se',
+  'Finland': 'fi',
+  'Denmark': 'dk',
+  'Iceland': 'is',
+};
+
+function flagSpan(code) {
+  return '<span class="fi fi-' + code + '" title="' + code.toUpperCase() + '"></span>';
+}
+
+function labelWithFlag(rawLabel) {
+  // Replace "(Country)" with flag icon span + remaining text (no country name)
+  var parts = rawLabel.split(/(\([^)]+\))/g);
+  return parts.map(function(part) {
+    var m = part.match(/^\(([^)]+)\)$/);
+    if (m) {
+      var country = m[1].trim();
+      var code = COUNTRY_FLAGS[country];
+      if (code) return flagSpan(code);
+      if (country === 'Global') return '<span title="Global">🌐</span>';
+      return esc(part); // unknown country — keep as-is
+    }
+    return esc(part);
+  }).join('');
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+var S = {
+  rowCount: 1,
+  sources: [],
+  sourcePubTypes: [],
+  openGroups: {},
+  yearsEx: [],
+  page: 1,
+  total: 0,
+  facets: { source_groups: [], years: [] },
+  selected: {}
+};
+var _timer = null;
+var _groupKeys = {};
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+function $id(id) { return document.getElementById(id); }
+
+function esc(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escJsStr(s) {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function toast(msg, ms) {
+  var t = $id('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  setTimeout(function(){ t.classList.remove('on'); }, ms||2500);
+}
+function togglePanel(id) { $id(id).classList.toggle('open'); }
+function toggleDD(id) {
+  ['ioWrap','expWrap'].forEach(function(x){ if(x!==id) $id(x).classList.remove('open'); });
+  $id('selExpWrap').classList.remove('open');
+  $id(id).classList.toggle('open');
+}
+function toggleSelDD() {
+  ['ioWrap','expWrap'].forEach(function(x){ $id(x).classList.remove('open'); });
+  $id('selExpWrap').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  ['ioWrap','expWrap'].forEach(function(id) {
+    var el = $id(id);
+    if (el && !el.contains(e.target)) el.classList.remove('open');
+  });
+  var sw = $id('selExpWrap');
+  if (sw && !sw.contains(e.target)) sw.classList.remove('open');
+});
+
+// ── Syntax highlighting for search bars ────────────────────────────────────
+function highlightQuery(text) {
+  if (!text) return '';
+  // Tokenize preserving all characters
+  var result = '';
+  var i = 0;
+  var len = text.length;
+
+  while (i < len) {
+    // Check for quoted string
+    if (text[i] === '"') {
+      var end = text.indexOf('"', i + 1);
+      if (end === -1) end = len - 1;
+      result += '<span class="tok-quote">' + esc(text.slice(i, end + 1)) + '</span>';
+      i = end + 1;
+      continue;
+    }
+    // Check for parentheses
+    if (text[i] === '(' || text[i] === ')') {
+      result += '<span class="tok-paren">' + esc(text[i]) + '</span>';
+      i++;
+      continue;
+    }
+    // Try to grab a word token
+    if (/\w/.test(text[i])) {
+      var wordStart = i;
+      while (i < len && /\w/.test(text[i])) i++;
+      var word = text.slice(wordStart, i);
+      var upper = word.toUpperCase();
+      if (upper === 'AND') {
+        result += '<span class="tok-and">' + esc(word) + '</span>';
+      } else if (upper === 'OR') {
+        result += '<span class="tok-or">' + esc(word) + '</span>';
+      } else if (upper === 'NOT') {
+        result += '<span class="tok-not">' + esc(word) + '</span>';
+      } else {
+        result += esc(word);
+      }
+      continue;
+    }
+    // Other character (space, punctuation) — pass through
+    result += esc(text[i]);
+    i++;
+  }
+  return result;
+}
+
+function syncHighlight(idx) {
+  var ta = $id('q_' + idx);
+  var hl = $id('hl_' + idx);
+  if (!ta || !hl) return;
+  var val = ta.value;
+  // When empty: leave innerHTML blank so CSS :empty ::before placeholder shows.
+  // When non-empty: append a trailing space so the caret renders correctly at EOL.
+  hl.innerHTML = val ? highlightQuery(val) + ' ' : '';
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.max(42, el.scrollHeight) + 'px';
+  // Also resize wrapper
+  var wrap = el.closest('.search-editor-wrap');
+  if (wrap) wrap.style.minHeight = el.style.height;
+}
+
+function handleSearchKey(e, idx) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    doSearch(1);
+  }
+}
+
+// ── Quote normalization ────────────────────────────────────────────────────
+function normalizeQuotes(text) {
+  return String(text || '')
+    .replace(/[""„‟«»]/g, '"')
+    .replace(/[''‚‛]/g, "'");
+}
+
+// ── Search rows ────────────────────────────────────────────────────────────
+function addRow() {
+  var idx = S.rowCount;
+  S.rowCount++;
+  var div = document.createElement('div');
+  div.className = 'search-row';
+  div.id = 'row_' + idx;
+  div.innerHTML =
+    '<select class="bool-select" id="op_'+idx+'">' +
+      '<option>AND</option><option>OR</option><option>NOT</option>' +
+    '</select>' +
+    '<div class="search-editor-wrap" id="wrap_' + idx + '">' +
+      '<textarea class="search-input-real" id="q_' + idx + '" rows="1" ' +
+        'oninput="syncHighlight(' + idx + ');autoResize(this)" ' +
+        'onkeydown="handleSearchKey(event,' + idx + ')" ' +
+        'spellcheck="false" placeholder="Additional term…"></textarea>' +
+      '<div class="search-highlight-layer" id="hl_' + idx + '" ' +
+        'data-placeholder="Additional term…"></div>' +
+    '</div>' +
+    '<button class="remove-row" onclick="removeRow(' + idx + ')" title="Remove">✕</button>';
+  $id('searchBlock').appendChild(div);
+  $id('q_' + idx).focus();
+}
+
+function removeRow(idx) {
+  var el = $id('row_' + idx);
+  if (el) el.remove();
+}
+
+function showWelcome() {
+  $id('resultsArea').innerHTML =
+    '<div class="empty"><div class="ico">🔍</div>' +
+    'Enter a search term above to explore Nordic publications.</div>';
+  $id('pager').innerHTML = '';
+  $id('resMeta').textContent = '';
+}
+
+function resetSearch() {
+  for (var i = 1; i < S.rowCount; i++) {
+    var el = $id('row_' + i);
+    if (el) el.remove();
+  }
+  S.rowCount = 1;
+  var q0 = $id('q_0');
+  if (q0) { q0.value = ''; q0.style.height = ''; }
+  syncHighlight(0);
+  // If no filters are active either, return to welcome state
+  var hasFilter = S.sources.length > 0 || S.sourcePubTypes.length > 0 ||
+                  S.yearsEx.length > 0 || $id('yearFrom').value || $id('yearTo').value;
+  if (hasFilter) { doSearch(1); } else { showWelcome(); }
+}
+
+function buildQ() {
+  var parts = [];
+  var q0El = $id('q_0');
+  var q0 = q0El ? normalizeQuotes(q0El.value).trim() : '';
+  if (q0) { if (q0El) q0El.value = normalizeQuotes(q0El.value); parts.push(q0); }
+
+  for (var i = 1; i < S.rowCount; i++) {
+    var qEl = $id('q_' + i);
+    var opEl = $id('op_' + i);
+    if (!qEl) continue;
+    qEl.value = normalizeQuotes(qEl.value);
+    syncHighlight(i);
+    var val = qEl.value.trim();
+    if (!val) continue;
+    var op = opEl ? opEl.value : 'AND';
+    parts.push(op === 'NOT' ? 'NOT (' + val + ')' : op + ' (' + val + ')');
+  }
+  return parts.join(' ');
+}
+
+// ── Params & search ──────────────────────────────────────────────────────────
+function buildParams(page) {
+  var p = new URLSearchParams();
+  var q = buildQ();
+  if (q) p.append('q', q);
+  S.sources.forEach(function(s){ p.append('sources', s); });
+  S.sourcePubTypes.forEach(function(pair){ p.append('pub_type_pairs', pair); });
+  var yf = $id('yearFrom').value; if (yf) p.append('year_from', yf);
+  var yt = $id('yearTo').value;   if (yt) p.append('year_to', yt);
+  S.yearsEx.forEach(function(y){ p.append('years_exact', y); });
+  p.append('page', page || S.page);
+  p.append('size', $id('pageSize').value);
+  return p;
+}
+function scheduleSearch() {
+  clearTimeout(_timer);
+  _timer = setTimeout(function(){ doSearch(1); }, 500);
+}
+function doSearch(page) {
+  S.page = page || 1;
+  $id('resultsArea').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  $id('pager').innerHTML = '';
+
+  fetch('/api/search?' + buildParams(S.page))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      S.total  = data.total;
+      S.facets = data.facets;
+      renderResults(data.results);
+      renderFacets(data.facets);
+      renderPager(data.total, S.page, parseInt($id('pageSize').value));
+      renderMeta(data.total, S.page, parseInt($id('pageSize').value));
+    })
+    .catch(function(e){
+      $id('resultsArea').innerHTML = '<div class="empty">Error loading results. Is OpenSearch running?</div>';
+      console.error(e);
+    });
+}
+
+// ── Highlight search terms in results ────────────────────────────────────────
+function getTerms() {
+  var terms = [];
+  var skip = {'AND':1,'OR':1,'NOT':1,'and':1,'or':1,'not':1};
+  for (var i = 0; i < S.rowCount; i++) {
+    var el = $id('q_' + i);
+    if (!el || !el.value.trim()) continue;
+    el.value.trim().split(/[\s()"+]+/).forEach(function(w){
+      w = w.replace(/[*?]/g,'');
+      if (w.length >= 3 && !skip[w]) terms.push(w);
+    });
+  }
+  return terms;
+}
+function highlight(text) {
+  if (!text) return '';
+  var terms = getTerms();
+  var safe = esc(text);
+  if (!terms.length) return safe;
+  var pattern = terms.map(function(t){ return t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }).join('|');
+  try {
+    var re = new RegExp('(' + pattern + ')', 'gi');
+    return safe.replace(re, '<mark>$1</mark>');
+  } catch(e) { return safe; }
+}
+
+// ── Render results ────────────────────────────────────────────────────────────
+function renderResults(results) {
+  if (!results || !results.length) {
+    $id('resultsArea').innerHTML = '<div class="empty"><div class="ico">🔍</div>No results found.</div>';
+    return;
+  }
+  var html = results.map(function(r) {
+    var isSel = !!S.selected[r.id];
+    var titleInner = r.source_url
+      ? '<a href="' + esc(r.source_url) + '" target="_blank" rel="noopener">' + highlight(r.title) + '</a>'
+      : highlight(r.title);
+
+    var authors  = r.authors  ? '<div class="card-authors">'  + esc(r.authors)  + '</div>' : '';
+    var abstract = r.abstract ? '<div class="card-abstract">' + highlight(r.abstract) + '</div>' : '';
+
+    var yearChip = r.year ? '<span class="chip chip-year">📅 ' + r.year + '</span>' : '';
+    var srcLabel = labelWithFlag(r.source_label);
+    var srcChip  = '<span class="chip chip-src">' + srcLabel + '</span>';
+    var typeChip = r.pub_type_label ? '<span class="chip chip-type">' + esc(r.pub_type_label) + '</span>' : '';
+
+    return '<div class="card' + (isSel?' selected':'') + '" id="card_' + esc(r.id) + '">' +
+      '<div class="card-top">' +
+        '<input type="checkbox" class="card-cb"' + (isSel?' checked':'') +
+               ' onchange="toggleSel(\'' + esc(r.id) + '\',this.checked)">' +
+        '<div class="card-body">' +
+          '<div class="card-title">' + titleInner + '</div>' +
+          '<div class="card-chips">' + yearChip + srcChip + typeChip + '</div>' +
+          authors + abstract +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  $id('resultsArea').innerHTML = '<div class="results">' + html + '</div>';
+}
+
+function renderMeta(total, page, size) {
+  if (!total) { $id('resMeta').textContent = ''; return; }
+  var from = (page - 1) * size + 1;
+  var to = Math.min(page * size, total);
+  var pages = Math.ceil(total / size);
+  $id('resMeta').innerHTML =
+    'Showing <strong>' + from + '–' + to +
+    '</strong> of <strong>' + total.toLocaleString() +
+    '</strong> results (<strong>' + pages.toLocaleString() + '</strong> pages)';
+}
+
+// ── Facets ────────────────────────────────────────────────────────────────────
+function renderFacets(facets) {
+  renderDbFacet(facets.source_groups || []);
+  renderYearFacet(facets.years || []);
+}
+function hasRestrictedPubtype(keys) {
+  return S.sourcePubTypes.some(function(pair) {
+    return keys.some(function(key){ return pair.indexOf(key + '::') === 0; });
+  });
+}
+function isPubtypeSelected(keys, pubtypeKey) {
+  return keys.some(function(key){ return S.sourcePubTypes.indexOf(key + '::' + pubtypeKey) >= 0; });
+}
+function removeRestrictedPubtypesForKeys(keys) {
+  S.sourcePubTypes = S.sourcePubTypes.filter(function(pair){
+    return !keys.some(function(key){ return pair.indexOf(key + '::') === 0; });
+  });
+}
+
+function renderDbFacet(groups) {
+  if (!groups.length) {
+    $id('dbList').innerHTML = '<div style="font-size:12px;color:var(--slate2);padding:4px 0;font-family:\'DM Mono\',monospace">No results</div>';
+    return;
+  }
+  var html = '';
+  _groupKeys = {};
+  groups.forEach(function(g) {
+    var groupId = 'grp_' + g.group_label.replace(/[^a-zA-Z0-9]/g,'_');
+    var labelArg = "'" + escJsStr(g.group_label) + "'";
+    var keys = g.keys || [];
+    var allSelected = keys.length > 0 && keys.every(function(k){ return S.sources.indexOf(k) >= 0; });
+    var isOpen = !!S.openGroups[g.group_label];
+
+    var ptHtml = '';
+    var showSources = !!g.show_sources;
+    g.pubtypes.forEach(function(pt) {
+      if (showSources) {
+        var srcSel = S.sources.indexOf(pt.key) >= 0;
+        var srcArg = "'" + escJsStr(pt.key) + "'";
+        ptHtml +=
+          '<label class="pt-row">' +
+            '<input type="checkbox"' + (srcSel ? ' checked' : '') +
+                   ' onchange="toggleJournalSource(' + srcArg + ',this.checked)">' +
+            '<span class="pt-name">' + labelWithFlag(pt.label) + '</span>' +
+            '<span class="pt-count">' + pt.count.toLocaleString() + '</span>' +
+          '</label>';
+      } else {
+        var ptSel = isPubtypeSelected(keys, pt.key);
+        var ptArg = "'" + escJsStr(pt.key) + "'";
+        ptHtml +=
+          '<label class="pt-row">' +
+            '<input type="checkbox"' + (ptSel ? ' checked' : '') +
+                   ' onchange="togglePT(' + labelArg + ',' + ptArg + ',this.checked)">' +
+            '<span class="pt-name">' + esc(pt.label) + '</span>' +
+            '<span class="pt-count">' + pt.count.toLocaleString() + '</span>' +
+          '</label>';
+      }
+    });
+
+    // Apply flag substitution to group label
+    var displayLabel = labelWithFlag(g.group_label);
+
+    html +=
+      '<div class="db-group' + (isOpen ? ' open' : '') + '" id="' + esc(groupId) + '">' +
+        '<div class="db-group-row">' +
+          '<span class="db-group-toggle" onclick="toggleGroupOpen(' + labelArg + ');event.stopPropagation();" aria-hidden="true">▸</span>' +
+          '<input type="checkbox" id="cb_' + groupId + '"' + (allSelected ? ' checked' : '') +
+                 ' onchange="toggleGroup(' + labelArg + ',this.checked)">' +
+          '<span class="db-group-name" onclick="toggleGroupOpen(' + labelArg + ')">' + displayLabel + '</span>' +
+          '<span class="db-group-count">' + g.count.toLocaleString() + '</span>' +
+        '</div>' +
+        (ptHtml ? '<div class="db-pubtypes">' + ptHtml + '</div>' : '') +
+      '</div>';
+
+    _groupKeys[g.group_label] = keys;
+  });
+
+  $id('dbList').innerHTML = html;
+
+  groups.forEach(function(g) {
+    var groupId = 'grp_' + g.group_label.replace(/[^a-zA-Z0-9]/g,'_');
+    var cb = $id('cb_' + groupId);
+    if (cb) cb.indeterminate = !cb.checked && hasRestrictedPubtype(g.keys || []);
+  });
+}
+
+function toggleGroupOpen(groupLabel) {
+  S.openGroups[groupLabel] = !S.openGroups[groupLabel];
+  renderDbFacet(S.facets.source_groups || []);
+}
+function toggleGroup(groupLabel, checked) {
+  var keys = _groupKeys[groupLabel] || [];
+  if (checked) {
+    removeRestrictedPubtypesForKeys(keys);
+    keys.forEach(function(k){ if (S.sources.indexOf(k) < 0) S.sources.push(k); });
+  } else {
+    S.sources = S.sources.filter(function(s){ return keys.indexOf(s) < 0; });
+    removeRestrictedPubtypesForKeys(keys);
+  }
+  doSearch(1);
+}
+function togglePT(groupLabel, pubtypeKey, checked) {
+  var keys = _groupKeys[groupLabel] || [];
+  S.openGroups[groupLabel] = true;
+  keys.forEach(function(key) {
+    var pair = key + '::' + pubtypeKey;
+    if (checked) {
+      if (S.sourcePubTypes.indexOf(pair) < 0) S.sourcePubTypes.push(pair);
+      S.sources = S.sources.filter(function(sourceKey){ return sourceKey !== key; });
+    } else {
+      S.sourcePubTypes = S.sourcePubTypes.filter(function(value){ return value !== pair; });
+    }
+  });
+  doSearch(1);
+}
+
+function renderYearFacet(years) {
+  if (!years.length) { $id('yearList').innerHTML = ''; return; }
+  var html = years.slice(0, 100).map(function(y) {
+    var yStr = String(y.year);
+    var sel  = S.yearsEx.indexOf(yStr) >= 0;
+    var label = yStr === 'Other' ? 'Other <span style="font-size:10px;color:var(--slate2)">(2033–2099 + no year)</span>' : yStr;
+    return '<label class="year-row">' +
+      '<input type="checkbox"' + (sel ? ' checked' : '') +
+             ' onchange="toggleYear(\'' + yStr + '\',this.checked)">' +
+      label +
+      '<span class="year-count">' + y.count.toLocaleString() + '</span>' +
+    '</label>';
+  }).join('');
+  $id('yearList').innerHTML = html;
+}
+function toggleJournalSource(sourceKey, checked) {
+  if (checked) { if (S.sources.indexOf(sourceKey) < 0) S.sources.push(sourceKey); }
+  else { S.sources = S.sources.filter(function(s){ return s !== sourceKey; }); }
+  doSearch(1);
+}
+function toggleYear(year, checked) {
+  var yStr = String(year);
+  if (checked) { if (S.yearsEx.indexOf(yStr) < 0) S.yearsEx.push(yStr); }
+  else { S.yearsEx = S.yearsEx.filter(function(y){ return y !== yStr; }); }
+  doSearch(1);
+}
+function clearAll() {
+  S.sources = []; S.sourcePubTypes = []; S.yearsEx = [];
+  $id('yearFrom').value = ''; $id('yearTo').value = '';
+  var q0 = $id('q_0');
+  var hasQ = q0 && q0.value.trim().length > 0;
+  if (hasQ) { doSearch(1); } else { showWelcome(); }
+}
+
+// ── Selection ─────────────────────────────────────────────────────────────────
+function toggleSel(id, checked) {
+  if (checked) { S.selected[id] = true; } else { delete S.selected[id]; }
+  var card = $id('card_' + id);
+  if (card) card.classList.toggle('selected', checked);
+  updateSelBar();
+}
+function updateSelBar() {
+  var n = Object.keys(S.selected).length;
+  $id('selBar').classList.toggle('on', n > 0);
+  $id('selCount').textContent = n + ' selected';
+}
+function clearSel() {
+  S.selected = {};
+  document.querySelectorAll('.card-cb').forEach(function(cb){ cb.checked = false; });
+  document.querySelectorAll('.card.selected').forEach(function(c){ c.classList.remove('selected'); });
+  updateSelBar();
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+function renderPager(total, page, size) {
+  var tp = Math.ceil(total / size);
+  if (tp <= 1) { $id('pager').innerHTML = ''; return; }
+  var html = '<button class="pager-btn" onclick="doSearch(' + (page-1) + ')"' +
+    (page<=1?' disabled':'') + '>&#8249; Prev</button>';
+  var delta = 2, pageSet = {};
+  pageSet[1] = true; pageSet[tp] = true;
+  for (var i = Math.max(1,page-delta); i <= Math.min(tp,page+delta); i++) pageSet[i] = true;
+  var sorted = Object.keys(pageSet).map(Number).sort(function(a,b){return a-b;});
+  var prev = 0;
+  sorted.forEach(function(p) {
+    if (prev && p - prev > 1) html += '<span class="pager-dots">…</span>';
+    html += '<button class="pager-btn' + (p===page?' active':'') + '" onclick="doSearch(' + p + ')">' + p + '</button>';
+    prev = p;
+  });
+  html += '<button class="pager-btn" onclick="doSearch(' + (page+1) + ')"' +
+    (page>=tp?' disabled':'') + '>Next &#8250;</button>';
+  $id('pager').innerHTML = html;
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function doExport(fmt, selOnly) {
+  ['expWrap','selExpWrap'].forEach(function(id){ var el=$id(id); if(el) el.classList.remove('open'); });
+  var ids = Object.keys(S.selected);
+  if (selOnly && ids.length === 0) { toast('No records selected.'); return; }
+  var p = new URLSearchParams();
+  p.append('fmt', fmt);
+  if (selOnly) {
+    ids.forEach(function(id){ p.append('ids', id); });
+    toast('Exporting ' + ids.length + ' selected records…', 3000);
+  } else {
+    var base = buildParams(1);
+    base.delete('page'); base.delete('size');
+    base.forEach(function(v,k){ p.append(k,v); });
+    toast('Preparing ' + fmt.toUpperCase() + ' export…', 4000);
+  }
+  window.open('/api/export?' + p, '_blank');
+}
+
+// ── Save/load search ──────────────────────────────────────────────────────────
+function saveSearch() {
+  $id('ioWrap').classList.remove('open');
+  var rows = [];
+  for (var i = 0; i < S.rowCount; i++) {
+    var qEl = $id('q_' + i), opEl = $id('op_' + i);
+    if (qEl) rows.push({ q: qEl.value, op: opEl ? opEl.value : 'AND' });
+  }
+  var obj = {
+    rows: rows,
+    sources: S.sources,
+    sourcePubTypes: S.sourcePubTypes,
+    yearFrom: $id('yearFrom').value,
+    yearTo: $id('yearTo').value,
+    yearsEx: S.yearsEx,
+    pageSize: $id('pageSize').value,
+    savedAt: new Date().toISOString()
+  };
+  var today = new Date();
+  var dd = String(today.getDate()).padStart(2,'0');
+  var mm = String(today.getMonth()+1).padStart(2,'0');
+  var yyyy = today.getFullYear();
+  var filename = 'nordlit_search_' + dd + '_' + mm + '_' + yyyy + '.json';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));
+  a.download = filename;
+  a.click();
+  toast('Search saved.');
+}
+
+function loadSearch(event) {
+  $id('ioWrap').classList.remove('open');
+  var file = event.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var obj = JSON.parse(e.target.result);
+      for (var i = 1; i < S.rowCount; i++) { var el=$id('row_'+i); if(el) el.remove(); }
+      S.rowCount = 1;
+      var rows = obj.rows || [{ q: obj.q||'', op:'AND' }];
+      var q0 = $id('q_0');
+      if (q0 && rows[0]) { q0.value = rows[0].q || ''; syncHighlight(0); autoResize(q0); }
+      rows.slice(1).forEach(function(r) {
+        addRow();
+        var idx = S.rowCount - 1;
+        var qEl = $id('q_'+idx), opEl = $id('op_'+idx);
+        if (qEl) { qEl.value = r.q || ''; syncHighlight(idx); autoResize(qEl); }
+        if (opEl) opEl.value = r.op || 'AND';
+      });
+      $id('yearFrom').value = obj.yearFrom || '';
+      $id('yearTo').value   = obj.yearTo   || '';
+      S.sources = obj.sources || [];
+      S.sourcePubTypes = obj.sourcePubTypes || [];
+      S.yearsEx = obj.yearsEx || [];
+      if (obj.pageSize) $id('pageSize').value = obj.pageSize;
+      doSearch(1);
+      toast('Search loaded.');
+    } catch(err) { toast('Could not read search file.'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+syncHighlight(0);
+// Only trigger an initial search if a query or filter is already present
+// (e.g. loaded from a saved search). Otherwise show the welcome prompt.
+(function() {
+  var q0 = $id('q_0');
+  var hasQ = q0 && q0.value.trim().length > 0;
+  var hasFilter = S.sources.length > 0 || S.sourcePubTypes.length > 0 || S.yearsEx.length > 0;
+  if (hasQ || hasFilter) {
+    doSearch(1);
+  } else {
+    showWelcome();
+    // Still load the facet sidebar so filters are usable immediately
+    fetch('/api/search?size=0')
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (data.facets) {
+          renderFacets(data.facets);
+        }
+      })
+      .catch(function(){});  // fail silently — sidebar will populate on first search
+  }
+})();
+</script>
+</body>
+</html>
