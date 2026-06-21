@@ -43,6 +43,8 @@ html { font-size: 16px; scroll-behavior: smooth; }
   --bool-not:   #6a3d9a;   /* violet — not red, distinct from blue/orange */
   --bool-paren: #00796b;   /* teal — distant from all above */
   --bool-quote: #5d4037;   /* warm brown */
+  --bool-trunc: #b45309;  /* truncation/wildcard */
+  --bool-near:  #0f766e;  /* proximity */
 }
 
 body {
@@ -115,10 +117,11 @@ aside {
   gap: .875rem;
   position: sticky;
   top: 76px;
-  height: calc(100vh - 76px);
-  overflow-y: auto;
+  height: calc(100dvh - 76px);
+  overflow: hidden;
+  min-height: 0;
 }
-aside::-webkit-scrollbar { width: 4px; }
+aside::-webkit-scrollbar { width: 8px; }
 aside::-webkit-scrollbar-track { background: transparent; }
 aside::-webkit-scrollbar-thumb { background: var(--slate3); border-radius: 2px; }
 
@@ -151,11 +154,33 @@ aside::-webkit-scrollbar-thumb { background: var(--slate3); border-radius: 2px; 
 }
 .panel-arrow { font-size: 10px; color: var(--slate2); transition: transform 180ms; }
 .panel.open .panel-arrow { transform: rotate(180deg); }
-.panel-body { display: none; padding: 10px 12px; max-height: 580px; overflow-y: auto; }
+.panel-body {
+  display: none;
+  padding: 10px 12px;
+  overflow-y: auto;
+  min-height: 0;
+}
 .panel-body::-webkit-scrollbar { width: 3px; }
 .panel-body::-webkit-scrollbar-thumb { background: var(--slate3); }
 #dbList { min-width: 300px; }
 .panel.open .panel-body { display: block; }
+
+/* Sidebar filter sizing: the database panel expands only when open. */
+#dbPanel {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#dbPanel.open { flex: 1 1 auto; }
+#dbPanel .panel-body {
+  flex: 1 1 auto;
+  max-height: none;
+}
+#dbPanel:not(.open) .panel-body { display: none; }
+
+#yearPanel { flex: 0 0 auto; }
+#yearPanel .panel-body { max-height: 260px; }
 
 /* DB groups */
 .db-group { margin-bottom: 6px; }
@@ -210,6 +235,68 @@ aside::-webkit-scrollbar-thumb { background: var(--slate3); border-radius: 2px; 
 .pt-row:hover .pt-name { color: var(--slate1); }
 .pt-name { font-size: 12px; color: var(--slate1); flex: 1; }
 .pt-count { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--slate3); }
+
+
+/* Source information tooltips */
+.source-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--slate3);
+  border-radius: 999px;
+  background: rgba(245, 241, 234, .75);
+  color: var(--slate2);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  flex: 0 0 auto;
+  transition: color 120ms, border-color 120ms, background 120ms;
+}
+.db-group-name .source-info-icon,
+.pt-name .source-info-icon {
+  margin: 0 4px 0 4px;
+  vertical-align: -2px;
+}
+.source-info-icon:hover,
+.source-info-icon:focus {
+  color: var(--fjord);
+  border-color: var(--fjord);
+  background: var(--fjord-mist);
+  outline: none;
+}
+.source-tooltip {
+  position: fixed;
+  z-index: 1000;
+  width: min(340px, calc(100vw - 24px));
+  padding: 11px 12px;
+  border: 1px solid var(--birch3);
+  border-radius: 10px;
+  background: #fffdf9;
+  box-shadow: var(--shl);
+  color: var(--slate);
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.source-tooltip.on {
+  opacity: 1;
+  transform: none;
+}
+.source-tooltip-title {
+  margin-bottom: 5px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--fjord);
+}
 
 /* Year */
 .year-range-row { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
@@ -310,6 +397,9 @@ main {
   line-height: 1.6;
   z-index: 2;
 }
+.search-input-real::placeholder {
+  color: transparent;
+}
 
 /* The syntax-highlighted mirror layer */
 .search-highlight-layer {
@@ -340,6 +430,8 @@ main {
 .tok-not   { color: var(--bool-not);   font-weight: 500; }
 .tok-paren { color: var(--bool-paren); font-weight: 700; }
 .tok-quote { color: var(--bool-quote); }
+.tok-trunc { color: var(--bool-trunc); font-weight: 800; }
+.tok-near  { color: var(--bool-near);  font-weight: 700; }
 
 /* Simple (additional rows) still use textarea with highlight */
 .bool-select {
@@ -507,7 +599,7 @@ main {
   border-radius: var(--r);
   display: none;
   align-items: center;
-  gap: 12px;
+  gap: 6px 18px;
   flex-wrap: wrap;
   font-family: 'DM Mono', monospace;
   font-size: 12px;
@@ -639,6 +731,40 @@ mark {
   font-size: 15px;
 }
 .empty .ico { font-size: 36px; margin-bottom: 14px; opacity: .6; }
+.query-error {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+  font-style: normal;
+  color: var(--slate);
+  background: #fff;
+  border: 1px solid var(--birch3);
+  border-left: 4px solid var(--not);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  box-shadow: var(--sh);
+}
+.query-error strong {
+  display: block;
+  color: var(--fjord);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.query-error .hint { margin-top: 8px; color: var(--slate2); }
+.query-error code {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--birch);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--fjord);
+}
 .spinner-wrap { text-align: center; padding: 70px 20px; }
 .spinner {
   display: inline-block;
@@ -674,7 +800,7 @@ mark {
 /* Boolean legend */
 .bool-legend {
   display: flex;
-  gap: 12px;
+  gap: 6px 18px;
   flex-wrap: wrap;
   font-family: 'DM Mono', monospace;
   font-size: 11px;
@@ -683,11 +809,64 @@ mark {
   padding: 2px 0;
 }
 .bool-legend span { display: flex; align-items: center; gap: 4px; }
+.special-search-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  color: var(--slate2);
+  font-size: 12px;
+}
+.special-search-toggle {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+}
+.special-search-toggle input { margin-top: 2px; accent-color: var(--pine); }
+.special-search-toggle strong { color: var(--slate); font-weight: 600; }
+.special-search-note { color: var(--slate2); }
+
+.search-meta-row {
+  margin: -2px 1px 8px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .035em;
+  color: var(--slate2);
+  opacity: .78;
+}
+.search-meta-row .dot { opacity: .55; }
+.search-spelling-note {
+  margin-top: 7px;
+  max-width: 780px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--slate2);
+}
+.search-spelling-note strong {
+  color: var(--slate);
+  font-weight: 600;
+}
+.search-spelling-note code {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  color: var(--slate);
+  background: rgba(147, 120, 90, .08);
+  border: 1px solid var(--birch2);
+  border-radius: 5px;
+  padding: 1px 4px;
+}
 .leg-and { color: var(--bool-and); }
 .leg-or  { color: var(--bool-or); }
 .leg-not { color: var(--bool-not); }
 .leg-par { color: var(--bool-paren); }
-.leg-q   { color: var(--bool-quote); }
+.leg-q     { color: var(--bool-quote); }
+.leg-trunc { color: var(--bool-trunc); font-weight: 800; }
+.leg-near  { color: var(--bool-near);  font-weight: 700; }
 
 .fi { display: inline-block; vertical-align: middle; margin-right: 3px; border-radius: 2px; width: 1.2em; height: 0.9em; background-size: cover; background-position: center; flex-shrink: 0; }
 
@@ -710,7 +889,7 @@ mark {
        class="btn btn-secondary"
        style="font-size:11px;text-decoration:none">Manual</a>
     <div class="dd-wrap" id="ioWrap">
-      <button class="btn btn-secondary" onclick="toggleDD('ioWrap')" style="font-size:11px">Search</button>
+      <button class="btn btn-secondary" onclick="toggleDD('ioWrap')" style="font-size:11px">Import/Export Search</button>
       <div class="dd-menu">
         <button class="dd-item" onclick="saveSearch()">💾 Save search (JSON)</button>
         <div class="dd-sep"></div>
@@ -754,11 +933,14 @@ mark {
       </div>
     </div>
 
-    <button class="clear-btn" onclick="clearAll()">✕ Clear all filters</button>
   </aside>
 
   <!-- Main -->
   <main>
+
+    <div class="search-meta-row" aria-label="Application version and update date">
+      <span>Testing build</span><span class="dot">·</span><span>v0.0.0</span><span class="dot">·</span><span>Updated 1 Apr 2026</span>
+    </div>
 
     <!-- Boolean search rows -->
     <div id="searchBlock" class="search-block">
@@ -783,6 +965,19 @@ mark {
       <span><b class="leg-not">NOT</b> exclusion</span>
       <span><b class="leg-par">( )</b> grouping</span>
       <span><b class="leg-q">" "</b> phrase</span>
+      <span><b class="leg-trunc">*</b> truncation/wildcard</span>
+      <span><b class="leg-near">NEAR/#</b> within # words, e.g. NEAR/3</span>
+    </div>
+
+    <div class="special-search-row">
+      <label class="special-search-toggle" title="When off, searches ignore accents and similar diacritics. When on, special characters must match exactly.">
+        <input type="checkbox" id="exactSpecialChars" onchange="toggleExactSpecialChars(this.checked)">
+        <span><strong>Exact special-character search</strong> <span class="special-search-note">— off: ó = o; on: ó must match ó</span></span>
+      </label>
+    </div>
+
+    <div class="search-spelling-note">
+      <strong>Spelling note:</strong> You’ll need to handle British and American English as separate variants.
     </div>
 
     <div class="search-controls">
@@ -845,6 +1040,7 @@ mark {
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="source-tooltip" id="sourceTooltip" role="tooltip" aria-hidden="true"></div>
 
 <script>
 // ── Country flag mapping (uses flag-icons CSS library) ───────────────────────
@@ -876,6 +1072,31 @@ function labelWithFlag(rawLabel) {
   }).join('');
 }
 
+function labelWithFlagAndInfo(rawLabel, infoIconHtml) {
+  // Place source info directly after the country/global marker when present.
+  var inserted = false;
+  var parts = rawLabel.split(/(\([^)]+\))/g);
+  var html = parts.map(function(part) {
+    var m = part.match(/^\(([^)]+)\)$/);
+    if (m) {
+      var country = m[1].trim();
+      var code = COUNTRY_FLAGS[country];
+      var flagHtml = '';
+      if (code) flagHtml = flagSpan(code);
+      else if (country === 'Global') flagHtml = '<span title="Global">🌐</span>';
+      else flagHtml = esc(part);
+      if (infoIconHtml && !inserted && (code || country === 'Global')) {
+        inserted = true;
+        return flagHtml + infoIconHtml;
+      }
+      return flagHtml;
+    }
+    return esc(part);
+  }).join('');
+  if (infoIconHtml && !inserted) html += infoIconHtml;
+  return html;
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 var S = {
   rowCount: 1,
@@ -886,7 +1107,8 @@ var S = {
   page: 1,
   total: 0,
   facets: { source_groups: [], years: [] },
-  selected: {}
+  selected: {},
+  exactSpecialChars: false
 };
 var _timer = null;
 var _groupKeys = {};
@@ -903,11 +1125,421 @@ function escJsStr(s) {
   return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+
+// Source descriptions shown in the Database & Publication Type information tooltips.
+var SOURCE_DESCRIPTIONS = {
+  "nva": {
+    "label": "NVA (Norway)",
+    "description": "Norway’s national research information repository and publication archive. Use it when you want broad coverage of Norwegian university and research-institution outputs, including journal articles, theses, reports, book chapters, and other registered research results. It is especially relevant for searches where Norwegian institutional provenance matters. See the NordLit manual for more information."
+  },
+  "polar_research": {
+    "label": "Polar Research (Norway)",
+    "description": "A specialist scholarly journal source for Arctic, polar, environmental, biological, geological, and social-scientific research. Use it when the search concerns northern environments, Svalbard, polar regions, climate, ecology, or Arctic governance, but do not expect comprehensive coverage of general Nordic scholarship. See the NordLit manual for more information."
+  },
+  "diva": {
+    "label": "DiVA (Sweden)",
+    "description": "Sweden’s major shared institutional repository and discovery service for research publications and student theses from participating universities and research organisations. Use it for Swedish academic output, especially theses, dissertations, institutional reports, and publications deposited through university repository workflows. See the NordLit manual for more information."
+  },
+  "swepub": {
+    "label": "SwePub (Sweden)",
+    "description": "A national Swedish aggregation layer for scholarly output from universities, higher education institutions, and public agencies. Use it when you need broad Swedish research coverage across institutions, especially journal articles, theses, conference contributions, and other research publications that may not be concentrated in a single repository. See the NordLit manual for more information."
+  },
+  "maritime_commons": {
+    "label": "Maritime Commons (Sweden)",
+    "description": "The digital repository of the World Maritime University. Use it for maritime policy, shipping, ocean governance, marine environmental management, seafarer education, and World Maritime University dissertations or institutional research outputs. See the NordLit manual for more information."
+  },
+  "liu_electronic_press": {
+    "label": "LiU Electronic Press (Sweden)",
+    "description": "Linköping University’s electronic publishing and repository service. Use it for Linköping-affiliated dissertations, student theses, reports, conference materials, journals, and open access publications, particularly when institutional Swedish coverage is important. See the NordLit manual for more information."
+  },
+  "open_books_lund": {
+    "label": "Open Books at Lund University (Sweden)",
+    "description": "Lund University’s open monograph and edited-book platform. Use it when looking for scholarly books, edited volumes, and longer-form research outputs from or connected to Lund University, especially in humanities and social sciences. See the NordLit manual for more information."
+  },
+  "stockholm_university_press": {
+    "label": "Stockholm University Press (Sweden)",
+    "description": "An open access university press publishing peer-reviewed academic books and journals. Use it for high-quality scholarly books and journals associated with Stockholm University, with particular value for humanities, social sciences, law, and interdisciplinary Nordic research. See the NordLit manual for more information."
+  },
+  "forskningsportal": {
+    "label": "Forskningsportal (Denmark)",
+    "description": "Denmark’s national research portal for discovering Danish research across institutional, national, and global data sources. Use it when you want Danish research output across universities and research institutions rather than material from one institution or publisher only. See the NordLit manual for more information."
+  },
+  "orgprints": {
+    "label": "Organic Eprints (Denmark)",
+    "description": "An international open access archive for research in organic food, farming, agriculture, and related projects. Use it for agricultural education, sustainability, food systems, organic farming, environmental policy, and practice-oriented research with strong European and Nordic relevance. See the NordLit manual for more information."
+  },
+  "au_open_books": {
+    "label": "AU Library E-books (Denmark)",
+    "description": "Aarhus University Library’s open e-book source. Use it for Danish academic books, edited volumes, and institutional publications where book-length scholarship is more important than journal-article coverage. See the NordLit manual for more information."
+  },
+  "hprints": {
+    "label": "hprints.org (Denmark)",
+    "description": "A Nordic open access repository for humanities and social-science manuscripts. Use it for working papers, preprints, and scholarly texts in Nordic humanities and social sciences that may not be well represented in journal databases. See the NordLit manual for more information."
+  },
+  "finna": {
+    "label": "Finna (Finland)",
+    "description": "Finland’s broad national discovery service for materials from libraries, archives, museums, and other organisations. Use it when you want wide Finnish coverage, including theses, books, reports, and cultural or scientific materials, but expect more noise than in a narrowly research-only database. See the NordLit manual for more information."
+  },
+  "fi_institutions": {
+    "label": "Finnish institutions (Finland)",
+    "description": "A grouped set of Finnish institutional repositories and research-information sources. Use it for publications, reports, dissertations, and local institutional outputs that may not be fully visible through one national Finnish platform. See the NordLit manual for more information."
+  },
+  "theseus": {
+    "label": "Theseus (Finland)",
+    "description": "The open repository of Finland’s Universities of Applied Sciences. Use it for applied, professional, practice-oriented, and student thesis literature from Finnish universities of applied sciences, especially where workplace, education, welfare, health, technology, or regional development themes are relevant. See the NordLit manual for more information."
+  },
+  "helda": {
+    "label": "Helda (Finland)",
+    "description": "The University of Helsinki’s open digital repository. Use it for University of Helsinki research publications, dissertations, theses, books, series, and research data, especially when looking for Finnish academic output with strong institutional provenance. See the NordLit manual for more information."
+  },
+  "skemman": {
+    "label": "Skemman (Iceland)",
+    "description": "Iceland’s shared repository for academic and research documents, with particular strength in university theses and student work. Use it for Icelandic bachelor’s and master’s theses, dissertations, and institutional research outputs that may otherwise be difficult to locate internationally. See the NordLit manual for more information."
+  },
+  "landspitali_archive": {
+    "label": "Landspitali Research Archive (Iceland)",
+    "description": "A research-output source associated with Landspítali, Iceland’s national university hospital. Use it for Icelandic health, clinical, biomedical, hospital-based, and health-professions research, especially where local institutional output matters. See the NordLit manual for more information."
+  },
+  "opinvisindi": {
+    "label": "Opin Visindi (Iceland)",
+    "description": "Iceland’s open access repository for research outputs and doctoral dissertations from Icelandic universities and the National and University Library of Iceland. Use it for peer-reviewed Icelandic university research, open access articles, and doctoral work. See the NordLit manual for more information."
+  },
+  "arctic_portal_library": {
+    "label": "Arctic Portal Library (Iceland)",
+    "description": "A specialist Arctic scientific publications archive. Use it for Arctic Council, International Polar Year, University of the Arctic, circumpolar, environmental, policy, and educational materials rather than broad disciplinary searching. See the NordLit manual for more information."
+  },
+  "openalex": {
+    "label": "OpenAlex (Global)",
+    "description": "A global open scholarly metadata index covering works, authors, institutions, sources, funders, and related entities. Use it for broad international discovery and citation-oriented context, but treat its metadata as heterogeneous and less locally curated than national Nordic repositories. See the NordLit manual for more information."
+  },
+  "abo_journals": {
+    "label": "Åbo Akademi OJS (Finland)",
+    "description": "Åbo Akademi University’s journal platform. Use it for Finland-Swedish and Åbo Akademi-hosted journals, especially in humanities, social sciences, education, theology, language studies, and other fields represented by the university’s publishing communities. See the NordLit manual for more information."
+  },
+  "aicvs": {
+    "label": "Äldre I Centrum Vetenskapligt Supplement (Sweden)",
+    "description": "A Swedish specialist source connected to ageing, older adults, elder care, gerontology, and welfare research. Use it for searches on ageing societies, care work, health and social care for older people, and practice-oriented Scandinavian ageing research. See the NordLit manual for more information."
+  },
+  "uio_fritt": {
+    "label": "UiO FRITT (Norway)",
+    "description": "The University of Oslo’s open access journal publishing service. Use it for UiO-hosted scholarly journals across fields, especially when Norwegian institutional publishing and diamond/open access journal content may be relevant. See the NordLit manual for more information."
+  },
+  "septentrio": {
+    "label": "Septentrio (Norway)",
+    "description": "UiT The Arctic University of Norway’s open access publishing service for journals and serials. Use it for northern, Arctic, Indigenous, language, humanities, social-science, and interdisciplinary journals connected to UiT or Nordic scholarly communities. See the NordLit manual for more information."
+  },
+  "uia_journals": {
+    "label": "UiA Journal System (Norway)",
+    "description": "The University of Agder’s journal platform. Use it for UiA-hosted open access journals and scholarly series, particularly where Norwegian education, humanities, social sciences, arts, or regional research may be relevant. See the NordLit manual for more information."
+  },
+  "umea_journals": {
+    "label": "Umeå University Hosted Journals (Sweden)",
+    "description": "Umeå University’s hosted journal platform. Use it for Swedish and Nordic open access journals connected to Umeå-based scholarly communities, including northern, social-scientific, educational, humanities, and interdisciplinary research. See the NordLit manual for more information."
+  },
+  "textos_en_proceso": {
+    "label": "Textos en Proceso (Sweden)",
+    "description": "A specialist journal source for Spanish-language linguistics, discourse, pragmatics, and language research. Use it when searches concern Hispanic studies, language use, applied linguistics, or discourse analysis, rather than general Nordic institutional output. See the NordLit manual for more information."
+  },
+  "socialmedicinsk_tidskrift": {
+    "label": "Socialmedicinsk tidskrift (Sweden)",
+    "description": "A Swedish social medicine and public-health journal source. Use it for welfare, public health, health inequalities, social policy, health services, and applied health research with Swedish or Nordic relevance. See the NordLit manual for more information."
+  },
+  "sjwop": {
+    "label": "SJWOP (Sweden)",
+    "description": "The Scandinavian Journal of Work and Organizational Psychology. Use it for work psychology, organisational behaviour, occupational wellbeing, leadership, human resources, and workplace research in Scandinavian and international contexts. See the NordLit manual for more information."
+  },
+  "sjms": {
+    "label": "Scandinavian Journal of Military Studies (Norway)",
+    "description": "A specialist journal source for military studies, defence, security, civil-military relations, strategy, and armed forces research. Use it for Nordic and international military scholarship rather than general education or social-science searches. See the NordLit manual for more information."
+  },
+  "sjdr": {
+    "label": "SJDR (Sweden)",
+    "description": "A specialist disability-research journal source. Use it for disability studies, inclusion, accessibility, welfare services, special education, rehabilitation, and social participation research with Scandinavian and international relevance. See the NordLit manual for more information."
+  },
+  "rural_landscapes": {
+    "label": "Rural Landscapes (Sweden)",
+    "description": "An interdisciplinary journal source for rural environments, landscapes, land use, heritage, agriculture, and spatial change. Use it when research questions involve rural regions, environmental history, landscape studies, or planning. See the NordLit manual for more information."
+  },
+  "redescriptions": {
+    "label": "Redescriptions (Finland)",
+    "description": "A journal source focused on political thought, conceptual history, rhetoric, and the study of political language. Use it for political theory, intellectual history, rhetoric, and interpretive social-science searches. See the NordLit manual for more information."
+  },
+  "oslomet_journals": {
+    "label": "OsloMet Open Access Journals (Norway)",
+    "description": "OsloMet’s open access journal platform. Use it for journals connected to professional education, welfare, health, technology, library and information studies, social sciences, and applied research communities at OsloMet. See the NordLit manual for more information."
+  },
+  "ojlu": {
+    "label": "OJLU – Lund University (Sweden)",
+    "description": "Lund University’s open journal platform. Use it for Lund-hosted scholarly journals and disciplinary communities, especially where Swedish open access journal content may supplement national aggregators. See the NordLit manual for more information."
+  },
+  "gu_ojs": {
+    "label": "University of Gothenburg OJS (Sweden)",
+    "description": "The University of Gothenburg’s OJS journal platform. Use it for Gothenburg-hosted open access journals, especially in humanities, social sciences, education, arts, language, and interdisciplinary research. See the NordLit manual for more information."
+  },
+  "malmo_ojs": {
+    "label": "OJS @ Malmö University (Sweden)",
+    "description": "Malmö University’s journal platform. Use it for Malmö-hosted journals and applied or interdisciplinary research connected to urban studies, migration, education, welfare, communication, and social sciences. See the NordLit manual for more information."
+  },
+  "ntnu_ojs": {
+    "label": "NTNU Open Access Journals (Norway)",
+    "description": "NTNU’s open access journal publishing platform. Use it for peer-reviewed journals hosted by NTNU academic communities, including technology, education, humanities, social sciences, health, and interdisciplinary fields. See the NordLit manual for more information."
+  },
+  "novus_ojs": {
+    "label": "Novus Online Tidsskrifter (Norway)",
+    "description": "Novus Forlag’s online journal platform. Use it for Norwegian and Nordic journals in humanities and social sciences, especially language, literature, history, cultural studies, and social-science periodicals. See the NordLit manual for more information."
+  },
+  "njmr": {
+    "label": "Nordic Journal of Migration Research (Finland)",
+    "description": "A specialist migration-research journal with a Nordic profile. Use it for migration, integration, ethnicity, transnationalism, racism, belonging, borders, and mobility studies, including both Nordic and comparative international work. See the NordLit manual for more information."
+  },
+  "noril": {
+    "label": "Nordic Journal of Information Literacy (Norway)",
+    "description": "A specialist journal source for information literacy, academic libraries, learning, research skills, and educational information practices. Use it for library pedagogy, higher education learning, and information behaviour searches. See the NordLit manual for more information."
+  },
+  "lnuopen": {
+    "label": "LnuOpen (Sweden)",
+    "description": "Linnaeus University’s open journal and publishing platform. Use it for Linnaeus-hosted journals and institutional scholarly communication, particularly in education, humanities, social sciences, media, culture, and interdisciplinary fields. See the NordLit manual for more information."
+  },
+  "linkoping_ep": {
+    "label": "Linköping University Electronic Press (Sweden)",
+    "description": "Linköping University’s open access publishing platform for journals, proceedings, series, theses, books, and institutional publications. Use it when searching Linköping-affiliated scholarship or journals hosted through LiU’s publishing infrastructure. See the NordLit manual for more information."
+  },
+  "jdsr": {
+    "label": "Journal of Digital Social Research (Sweden)",
+    "description": "A specialist journal source for digital society, computational social science, digital methods, platforms, datafication, media, and technology-society relations. Use it for research at the intersection of social science and digital infrastructures. See the NordLit manual for more information."
+  },
+  "skriftserien_oslomet": {
+    "label": "HiOA Skriftserien (Norway)",
+    "description": "A publication series associated with OsloMet’s predecessor, Oslo and Akershus University College. Use it for institutional reports, working papers, professional education, welfare, and applied research outputs that may not appear in journal databases. See the NordLit manual for more information."
+  },
+  "geus_bulletin": {
+    "label": "GEUS Bulletin (Denmark)",
+    "description": "A peer-reviewed geoscience journal from the Geological Survey of Denmark and Greenland. Use it for geology, Greenland, Denmark, Arctic earth science, mapping, minerals, groundwater, energy, climate, and environmental geoscience. See the NordLit manual for more information."
+  },
+  "silva_fennica_ojs": {
+    "label": "Silva Fennica OJS (Finland)",
+    "description": "A specialist forest-science journal source. Use it for forestry, forest ecosystems, forest management, conservation, bioeconomy, and environmental research, particularly with Finnish, Nordic, or boreal relevance. See the NordLit manual for more information."
+  },
+  "estetika": {
+    "label": "Estetika (Finland)",
+    "description": "A specialist journal source in aesthetics and philosophy of art. Use it for philosophical aesthetics, art theory, criticism, interpretation, and humanities research rather than broad social-science searching. See the NordLit manual for more information."
+  },
+  "editori_helsinki": {
+    "label": "Editori (Finland)",
+    "description": "A University of Helsinki publishing platform for journals and scholarly serials. Use it for Helsinki-hosted open access journals and institutional scholarly outputs, especially in fields represented by the university’s publishing communities. See the NordLit manual for more information."
+  },
+  "cbs_open_journals": {
+    "label": "CBS Open Journals (Denmark)",
+    "description": "Copenhagen Business School’s open journal platform. Use it for business, management, organisation studies, economics, communication, entrepreneurship, and social-scientific journals connected to CBS research communities. See the NordLit manual for more information."
+  },
+  "boap_uib": {
+    "label": "Bergen Open Access Publishing (Norway)",
+    "description": "The University of Bergen Library’s open access publishing service for journals and series. Use it for UiB-associated journals, scholarly series, and Norwegian open access content across humanities, social sciences, education, and other fields. See the NordLit manual for more information."
+  },
+  "bells": {
+    "label": "BeLLS (Norway)",
+    "description": "A specialist linguistics and language-studies journal source. Use it for English language, linguistics, language learning, discourse, literary linguistics, and related humanities or education searches. See the NordLit manual for more information."
+  },
+  "barnboken": {
+    "label": "Barnboken (Sweden)",
+    "description": "A scholarly open access journal for children’s and young adult literature research. Use it for children’s literature, youth literature, reading culture, literary pedagogy, and Nordic childhood-culture research. See the NordLit manual for more information."
+  },
+  "arkiv_journal": {
+    "label": "Arkiv. Tidskrift för samhällsanalys (Sweden)",
+    "description": "A Swedish journal for social analysis. Use it for sociology, political economy, labour, class, welfare, social movements, and critical social-science research with Swedish or Nordic relevance. See the NordLit manual for more information."
+  },
+  "arctic_review": {
+    "label": "Arctic Review on Law and Politics (Norway)",
+    "description": "A multidisciplinary journal in law, politics, governance, and social science with an Arctic focus. Use it for Arctic governance, Indigenous issues, resource management, environmental politics, and circumpolar legal or policy research. See the NordLit manual for more information."
+  },
+  "annals_of_representation_theory": {
+    "label": "Annals of Representation Theory (Norway)",
+    "description": "A specialist mathematics journal source. Use it for algebra, representation theory, and related areas of pure mathematics; it will rarely be relevant for education, welfare, or general social-science searches unless the topic is mathematical. See the NordLit manual for more information."
+  },
+  "ojs_hi": {
+    "label": "OJS (Iceland)",
+    "description": "The University of Iceland’s OJS journal platform. Use it for Icelandic scholarly journals and locally hosted academic periodicals, especially where Icelandic-language or Iceland-focused research may not be prominent in international indexes. See the NordLit manual for more information."
+  },
+  "journal_fi": {
+    "label": "Journal.fi (Finland)",
+    "description": "Finland’s national open journal platform maintained by the Federation of Finnish Learned Societies. Use it for Finnish scholarly journals across disciplines, especially society-published, locally important, Finnish-language, Swedish-language, and open access journal content. See the NordLit manual for more information."
+  },
+  "tidsskrift_dk": {
+    "label": "Tidsskrift.dk (Denmark)",
+    "description": "The Royal Danish Library’s national portal for Danish scholarly, professional, and cultural journals. Use it for Danish-language and Denmark-focused journal literature, including digitised older journals and active open access periodicals. See the NordLit manual for more information."
+  },
+  "njls": {
+    "label": "Nordic Journal of Legal Studies (Finland)",
+    "description": "A specialist legal-studies journal source with Nordic relevance. Use it for law, legal theory, regulation, rights, governance, and comparative Nordic legal scholarship. See the NordLit manual for more information."
+  },
+  "aalborg_open_journals": {
+    "label": "Aalborg University Open Journals (Denmark)",
+    "description": "Aalborg University’s journal platform. Use it for Aalborg-hosted open access journals and scholarly communities, especially in problem-based learning, planning, communication, social sciences, humanities, technology, and interdisciplinary research. See the NordLit manual for more information."
+  },
+  "bibsys": {
+    "label": "BIBSYS Open Journals (Norway)",
+    "description": "A Norwegian open journal platform historically associated with national library and higher-education infrastructure. Use it for older or platform-hosted Norwegian open access journals that may not be captured through newer institutional publishing services. See the NordLit manual for more information."
+  },
+  "drcmr_eprints": {
+    "label": "DRCMR Eprints (Denmark)",
+    "description": "A specialist repository connected to the Danish Research Centre for Magnetic Resonance. Use it for medical imaging, neuroscience, MRI methods, clinical research, and biomedical technical outputs rather than broad Nordic literature searches. See the NordLit manual for more information."
+  },
+  "ejedp": {
+    "label": "European Journal of Economic Dynamics and Policy (Denmark)",
+    "description": "A specialist economics journal source. Use it for macroeconomics, economic dynamics, policy modelling, economic growth, business cycles, and quantitative policy analysis. See the NordLit manual for more information."
+  },
+  "franorfon": {
+    "label": "Revue nordique des études francophones (Sweden)",
+    "description": "A specialist journal source for Francophone studies in a Nordic scholarly context. Use it for French-language literature, culture, linguistics, translation, education, and Francophone area studies. See the NordLit manual for more information."
+  },
+  "hup": {
+    "label": "Helsinki University Press (Finland)",
+    "description": "A fully open access university press publishing peer-reviewed books and journals across academic fields. Use it for Helsinki-linked scholarly monographs, edited volumes, and journals, especially where open access book content is relevant. See the NordLit manual for more information."
+  },
+  "iberoamericana": {
+    "label": "Iberoamericana (Sweden)",
+    "description": "A specialist source for Ibero-American studies. Use it for Spanish- and Portuguese-speaking worlds, Latin America, Iberian cultures, language, literature, history, and area-studies research represented in Nordic scholarship. See the NordLit manual for more information."
+  },
+  "jicc": {
+    "label": "Journal of Intercultural Communication (Sweden)",
+    "description": "A specialist journal source for intercultural communication. Use it for cross-cultural communication, language, migration, education, media, workplace communication, and intercultural competence. See the NordLit manual for more information."
+  },
+  "jisib": {
+    "label": "Journal of Intelligence Studies in Business (Sweden)",
+    "description": "A specialist source for business intelligence, competitive intelligence, market intelligence, and knowledge management. Use it for management, strategy, information use, and decision-support research. See the NordLit manual for more information."
+  },
+  "karib": {
+    "label": "Karib (Sweden)",
+    "description": "A specialist humanities and area-studies source connected to Caribbean studies. Use it for Caribbean literature, culture, history, postcolonial studies, language, and transatlantic or comparative cultural research. See the NordLit manual for more information."
+  },
+  "njas": {
+    "label": "Nordic Journal of African Studies (Finland)",
+    "description": "A specialist African studies journal with Nordic scholarly connections. Use it for African languages, societies, history, politics, culture, development, education, and area-studies research. See the NordLit manual for more information."
+  },
+  "nordic_academic_press": {
+    "label": "Nordic Academic Press (Sweden)",
+    "description": "A scholarly publisher source for Nordic academic books. Use it for monographs and edited volumes, especially in history, social sciences, cultural studies, and Nordic humanities where books are central research outputs. See the NordLit manual for more information."
+  },
+  "novus_ebooks": {
+    "label": "Novus E-bøker (Norway)",
+    "description": "Novus Forlag’s e-book source. Use it for Norwegian scholarly books, edited volumes, and long-form humanities or social-science publications, particularly in language, literature, history, and cultural studies. See the NordLit manual for more information."
+  },
+  "orkana": {
+    "label": "Orkana Forlag (Norway)",
+    "description": "A Norwegian publisher source with regional and Nordic relevance. Use it for books and edited volumes, especially in history, culture, regionally oriented scholarship, and topics connected to northern Norway and the High North. See the NordLit manual for more information."
+  },
+  "tup": {
+    "label": "Tampere University Press (Finland)",
+    "description": "Tampere University’s scholarly publishing source. Use it for Finnish academic books, edited volumes, reports, and open access outputs, especially in social sciences, education, society, health, and humanities. See the NordLit manual for more information."
+  },
+  "universitetsforlaget": {
+    "label": "Universitetsforlaget (Norway)",
+    "description": "A major Norwegian academic publisher source. Use it for Norwegian scholarly journals, books, and professional academic literature across education, law, social sciences, humanities, health, and public-sector fields. See the NordLit manual for more information."
+  },
+  "vbri_press": {
+    "label": "VBRI Press (Sweden)",
+    "description": "A specialist publisher source associated with materials science, nanotechnology, energy, and advanced research. Use it for technical and scientific literature rather than general Nordic social-science or humanities searching. See the NordLit manual for more information."
+  },
+  "vtt_portal": {
+    "label": "VTT Research Information Portal (Finland)",
+    "description": "The research information portal for VTT Technical Research Centre of Finland. Use it for Finnish applied research in technology, industry, sustainability, energy, digitalisation, bioeconomy, and innovation-oriented research outputs. See the NordLit manual for more information."
+  },
+  "journal_platforms": {
+    "label": "Journal Platforms",
+    "description": "A grouped set of Nordic journal websites and open journal platforms. Use it when you want to search across individual scholarly journal sites rather than national or institutional repositories. See the NordLit manual for more information."
+  }
+};
+
+function sourceInfoIcon(key, fallbackLabel) {
+  var info = SOURCE_DESCRIPTIONS[key];
+  if (!info || !info.description) return '';
+  var title = info.label || fallbackLabel || 'Source information';
+  return '<span class="source-info-icon" tabindex="0" role="button" ' +
+    'aria-label="About ' + esc(title) + '" ' +
+    'data-source-title="' + esc(title) + '" ' +
+    'data-source-info="' + esc(info.description) + '" ' +
+    'onclick="event.preventDefault();event.stopPropagation();" ' +
+    'onmousedown="event.preventDefault();event.stopPropagation();" ' +
+    'onkeydown="if(event.key===\' \'||event.key===\'Enter\'){event.preventDefault();event.stopPropagation();}">i</span>';
+}
+
+function sourceInfoIconFromKeys(keys, fallbackLabel) {
+  if (fallbackLabel === 'Journal Platforms') return sourceInfoIcon('journal_platforms', fallbackLabel);
+  keys = keys || [];
+  for (var i = 0; i < keys.length; i++) {
+    if (SOURCE_DESCRIPTIONS[keys[i]]) return sourceInfoIcon(keys[i], fallbackLabel);
+  }
+  return '';
+}
+
+function showSourceTooltip(el) {
+  var tt = $id('sourceTooltip');
+  if (!tt) return;
+  var title = el.getAttribute('data-source-title') || 'Source information';
+  var body = el.getAttribute('data-source-info') || '';
+  if (!body) return;
+  tt.innerHTML = '<div class="source-tooltip-title">' + esc(title) + '</div><div>' + esc(body) + '</div>';
+  tt.setAttribute('aria-hidden', 'false');
+  tt.classList.add('on');
+  positionSourceTooltip(el);
+}
+
+function positionSourceTooltip(el) {
+  var tt = $id('sourceTooltip');
+  if (!tt || !tt.classList.contains('on')) return;
+  var r = el.getBoundingClientRect();
+  var pad = 12;
+  var w = tt.offsetWidth || 340;
+  var h = tt.offsetHeight || 120;
+  var left = Math.min(window.innerWidth - w - pad, Math.max(pad, r.left));
+  var top = r.bottom + 8;
+  if (top + h > window.innerHeight - pad) top = r.top - h - 8;
+  if (top < pad) top = pad;
+  tt.style.left = left + 'px';
+  tt.style.top = top + 'px';
+}
+
+function hideSourceTooltip() {
+  var tt = $id('sourceTooltip');
+  if (!tt) return;
+  tt.classList.remove('on');
+  tt.setAttribute('aria-hidden', 'true');
+}
+
+document.addEventListener('mouseover', function(e) {
+  var el = e.target.closest && e.target.closest('.source-info-icon');
+  if (el) showSourceTooltip(el);
+});
+document.addEventListener('mouseout', function(e) {
+  if (e.target.closest && e.target.closest('.source-info-icon')) hideSourceTooltip();
+});
+document.addEventListener('focusin', function(e) {
+  var el = e.target.closest && e.target.closest('.source-info-icon');
+  if (el) showSourceTooltip(el);
+});
+document.addEventListener('focusout', function(e) {
+  if (e.target.closest && e.target.closest('.source-info-icon')) hideSourceTooltip();
+});
+window.addEventListener('resize', hideSourceTooltip);
+window.addEventListener('scroll', hideSourceTooltip, true);
+
 function toast(msg, ms) {
   var t = $id('toast');
   t.textContent = msg;
   t.classList.add('on');
   setTimeout(function(){ t.classList.remove('on'); }, ms||2500);
+}
+function renderQueryError(detail) {
+  detail = detail || {};
+  var html = '<div class="empty"><div class="query-error">' +
+    '<strong>Search string problem</strong>' +
+    '<div>' + esc(detail.message || 'The search string could not be parsed.') + '</div>';
+  if (detail.hint) html += '<div class="hint">' + esc(detail.hint) + '</div>';
+  if (detail.near) html += '<code>' + esc(detail.near) + '</code>';
+  html += '</div></div>';
+  $id('resultsArea').innerHTML = html;
+  $id('pager').innerHTML = '';
+  renderMeta(0, 1, parseInt($id('pageSize').value));
 }
 function togglePanel(id) { $id(id).classList.toggle('open'); }
 function toggleDD(id) {
@@ -937,11 +1569,21 @@ function highlightQuery(text) {
   var len = text.length;
 
   while (i < len) {
-    // Check for quoted string
+    // Check for quoted string. Keep the phrase color, but color * inside it too.
     if (text[i] === '"') {
       var end = text.indexOf('"', i + 1);
       if (end === -1) end = len - 1;
-      result += '<span class="tok-quote">' + esc(text.slice(i, end + 1)) + '</span>';
+      result += '<span class="tok-quote">' + esc(text[i]);
+      var j = i + 1;
+      while (j <= end) {
+        if (text[j] === '*') {
+          result += '<span class="tok-trunc">*</span>';
+        } else {
+          result += esc(text[j]);
+        }
+        j++;
+      }
+      result += '</span>';
       i = end + 1;
       continue;
     }
@@ -951,6 +1593,20 @@ function highlightQuery(text) {
       i++;
       continue;
     }
+    // Check for truncation/wildcard outside quoted strings
+    if (text[i] === '*') {
+      result += '<span class="tok-trunc">*</span>';
+      i++;
+      continue;
+    }
+    // Check for NEAR/n proximity operator
+    var nearMatch = text.slice(i).match(/^NEAR\/\d+/i);
+    if (nearMatch) {
+      result += '<span class="tok-near">' + esc(nearMatch[0]) + '</span>';
+      i += nearMatch[0].length;
+      continue;
+    }
+
     // Try to grab a word token
     if (/\w/.test(text[i])) {
       var wordStart = i;
@@ -1022,7 +1678,7 @@ function addRow() {
       '<textarea class="search-input-real" id="q_' + idx + '" rows="1" ' +
         'oninput="syncHighlight(' + idx + ');autoResize(this)" ' +
         'onkeydown="handleSearchKey(event,' + idx + ')" ' +
-        'spellcheck="false" placeholder="Additional term…"></textarea>' +
+        'spellcheck="false"></textarea>' +
       '<div class="search-highlight-layer" id="hl_' + idx + '" ' +
         'data-placeholder="Additional term…"></div>' +
     '</div>' +
@@ -1044,19 +1700,58 @@ function showWelcome() {
   $id('resMeta').textContent = '';
 }
 
+function loadInitialFacets() {
+  fetch('/api/search?size=0' + (S.exactSpecialChars ? '&exact_special_chars=true' : ''))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.facets) {
+        S.facets = data.facets;
+        renderFacets(data.facets);
+      }
+    })
+    .catch(function(){});
+}
+
 function resetSearch() {
+  clearTimeout(_timer);
+
+  // Remove extra search rows and clear the main search input.
   for (var i = 1; i < S.rowCount; i++) {
     var el = $id('row_' + i);
     if (el) el.remove();
   }
   S.rowCount = 1;
   var q0 = $id('q_0');
-  if (q0) { q0.value = ''; q0.style.height = ''; }
+  if (q0) {
+    q0.value = '';
+    q0.style.height = '';
+    var wrap = q0.closest('.search-editor-wrap');
+    if (wrap) wrap.style.minHeight = '';
+  }
   syncHighlight(0);
-  // If no filters are active either, return to welcome state
-  var hasFilter = S.sources.length > 0 || S.sourcePubTypes.length > 0 ||
-                  S.yearsEx.length > 0 || $id('yearFrom').value || $id('yearTo').value;
-  if (hasFilter) { doSearch(1); } else { showWelcome(); }
+
+  // Clear all sidebar filters and reset facet group state.
+  S.sources = [];
+  S.sourcePubTypes = [];
+  S.yearsEx = [];
+  S.openGroups = {};
+  var yf = $id('yearFrom'); if (yf) yf.value = '';
+  var yt = $id('yearTo');   if (yt) yt.value = '';
+
+  // Clear selections, pagination, counts, and open menus.
+  S.selected = {};
+  S.exactSpecialChars = false;
+  var exactBox = $id('exactSpecialChars'); if (exactBox) exactBox.checked = false;
+  S.page = 1;
+  S.total = 0;
+  ['ioWrap','expWrap','selExpWrap'].forEach(function(id){
+    var el = $id(id); if (el) el.classList.remove('open');
+  });
+  updateSelBar();
+
+  // Return to the same state as a fresh page load, with unfiltered facet counts.
+  showWelcome();
+  loadInitialFacets();
 }
 
 function buildQ() {
@@ -1089,6 +1784,9 @@ function buildParams(page) {
   var yf = $id('yearFrom').value; if (yf) p.append('year_from', yf);
   var yt = $id('yearTo').value;   if (yt) p.append('year_to', yt);
   S.yearsEx.forEach(function(y){ p.append('years_exact', y); });
+  var exactBox = $id('exactSpecialChars');
+  S.exactSpecialChars = !!(exactBox && exactBox.checked);
+  if (S.exactSpecialChars) p.append('exact_special_chars', 'true');
   p.append('page', page || S.page);
   p.append('size', $id('pageSize').value);
   return p;
@@ -1097,13 +1795,48 @@ function scheduleSearch() {
   clearTimeout(_timer);
   _timer = setTimeout(function(){ doSearch(1); }, 500);
 }
+function hasActiveSearchCriteria() {
+  var q = buildQ();
+  var yf = $id('yearFrom') ? $id('yearFrom').value : '';
+  var yt = $id('yearTo') ? $id('yearTo').value : '';
+  return !!(
+    q ||
+    S.sources.length ||
+    S.sourcePubTypes.length ||
+    S.yearsEx.length ||
+    yf ||
+    yt
+  );
+}
+
+function toggleExactSpecialChars(checked) {
+  S.exactSpecialChars = !!checked;
+
+  // Changing the special-character mode should not turn an empty start page
+  // into a match-all search. Only rerun the search when the user already
+  // has an active query or filter.
+  if (hasActiveSearchCriteria()) {
+    doSearch(1);
+  } else {
+    showWelcome();
+    loadInitialFacets();
+  }
+}
 function doSearch(page) {
   S.page = page || 1;
   $id('resultsArea').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
   $id('pager').innerHTML = '';
 
   fetch('/api/search?' + buildParams(S.page))
-    .then(function(r){ return r.json(); })
+    .then(function(r){
+      return r.json().then(function(data){
+        if (!r.ok) {
+          var detail = data && data.detail ? data.detail : {};
+          throw { queryError: r.status === 400, detail: detail, status: r.status };
+        }
+        return data;
+      });
+    })
     .then(function(data){
       S.total  = data.total;
       S.facets = data.facets;
@@ -1113,6 +1846,10 @@ function doSearch(page) {
       renderMeta(data.total, S.page, parseInt($id('pageSize').value));
     })
     .catch(function(e){
+      if (e && e.queryError) {
+        renderQueryError(e.detail);
+        return;
+      }
       $id('resultsArea').innerHTML = '<div class="empty">Error loading results. Is OpenSearch running?</div>';
       console.error(e);
     });
@@ -1234,7 +1971,7 @@ function renderDbFacet(groups) {
           '<label class="pt-row">' +
             '<input type="checkbox"' + (srcSel ? ' checked' : '') +
                    ' onchange="toggleJournalSource(' + srcArg + ',this.checked)">' +
-            '<span class="pt-name">' + labelWithFlag(pt.label) + '</span>' +
+            '<span class="pt-name">' + labelWithFlagAndInfo(pt.label, sourceInfoIcon(pt.key, pt.label)) + '</span>' +
             '<span class="pt-count">' + pt.count.toLocaleString() + '</span>' +
           '</label>';
       } else {
@@ -1250,8 +1987,9 @@ function renderDbFacet(groups) {
       }
     });
 
-    // Apply flag substitution to group label
-    var displayLabel = labelWithFlag(g.group_label);
+    // Apply flag substitution and place source information next to the flag/global marker
+    var sourceInfo = sourceInfoIconFromKeys(keys, g.group_label);
+    var displayLabel = labelWithFlagAndInfo(g.group_label, sourceInfo);
 
     html +=
       '<div class="db-group' + (isOpen ? ' open' : '') + '" id="' + esc(groupId) + '">' +
@@ -1312,7 +2050,12 @@ function renderYearFacet(years) {
   var html = years.slice(0, 100).map(function(y) {
     var yStr = String(y.year);
     var sel  = S.yearsEx.indexOf(yStr) >= 0;
-    var label = yStr === 'Other' ? 'Other <span style="font-size:10px;color:var(--slate2)">(2033–2099 + no year)</span>' : yStr;
+    var label = yStr;
+    if (yStr === 'Other') {
+      label = 'Other <span style="font-size:10px;color:var(--slate2)">(2027–2030 + 2033–2099)</span>';
+    } else if (yStr === 'Missing') {
+      label = 'Missing <span style="font-size:10px;color:var(--slate2)">(no year)</span>';
+    }
     return '<label class="year-row">' +
       '<input type="checkbox"' + (sel ? ' checked' : '') +
              ' onchange="toggleYear(\'' + yStr + '\',this.checked)">' +
@@ -1334,11 +2077,7 @@ function toggleYear(year, checked) {
   doSearch(1);
 }
 function clearAll() {
-  S.sources = []; S.sourcePubTypes = []; S.yearsEx = [];
-  $id('yearFrom').value = ''; $id('yearTo').value = '';
-  var q0 = $id('q_0');
-  var hasQ = q0 && q0.value.trim().length > 0;
-  if (hasQ) { doSearch(1); } else { showWelcome(); }
+  resetSearch();
 }
 
 // ── Selection ─────────────────────────────────────────────────────────────────
@@ -1416,6 +2155,7 @@ function saveSearch() {
     yearTo: $id('yearTo').value,
     yearsEx: S.yearsEx,
     pageSize: $id('pageSize').value,
+    exactSpecialChars: S.exactSpecialChars,
     savedAt: new Date().toISOString()
   };
   var today = new Date();
@@ -1455,6 +2195,8 @@ function loadSearch(event) {
       S.sourcePubTypes = obj.sourcePubTypes || [];
       S.yearsEx = obj.yearsEx || [];
       if (obj.pageSize) $id('pageSize').value = obj.pageSize;
+      S.exactSpecialChars = !!obj.exactSpecialChars;
+      var exactBox = $id('exactSpecialChars'); if (exactBox) exactBox.checked = S.exactSpecialChars;
       doSearch(1);
       toast('Search loaded.');
     } catch(err) { toast('Could not read search file.'); }
@@ -1475,15 +2217,8 @@ syncHighlight(0);
     doSearch(1);
   } else {
     showWelcome();
-    // Still load the facet sidebar so filters are usable immediately
-    fetch('/api/search?size=0')
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        if (data.facets) {
-          renderFacets(data.facets);
-        }
-      })
-      .catch(function(){});  // fail silently — sidebar will populate on first search
+    // Still load the facet sidebar so filters are usable immediately.
+    loadInitialFacets();
   }
 })();
 </script>
